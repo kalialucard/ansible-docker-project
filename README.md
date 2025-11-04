@@ -3,8 +3,6 @@
 A small, self-contained lab that demonstrates **Ansible automation** against multiple Docker containers.
 It’s perfect for a portfolio: 1 control node (Ansible) + 5 Ubuntu target nodes, managed over SSH with a shared key.
 
-Below is a ready-to-use `README.md` you can drop into your repo. I included **places to paste real terminal outputs** (or screenshots) as proof for each section — replace the placeholders with your recorded outputs.
-
 ---
 
 ## Repo structure
@@ -54,7 +52,6 @@ docker exec -it ansible-control bash
 ```
 
 **Proof to add:** terminal output of `docker compose up --build -d` and `docker ps`.
-Example to paste (or screenshot):
 
 ```
 $ docker ps
