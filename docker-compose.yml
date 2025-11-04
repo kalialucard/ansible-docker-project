@@ -1,0 +1,54 @@
+services:
+  ansible:
+    build: ./ansible-control
+    container_name: ansible-control
+    volumes:
+      - ./ansible:/home/ansible/project
+      - ./ssh_keys:/shared_keys
+    tty: true
+    depends_on:
+      - target1
+      - target2
+      - target3
+      - target4
+      - target5
+
+  target1:
+    build: ./ansible-target
+    container_name: target1
+    environment:
+      - TARGET_NAME=target1
+    volumes:
+      - ./ssh_keys:/shared_keys
+
+  target2:
+    build: ./ansible-target
+    container_name: target2
+    environment:
+      - TARGET_NAME=target2
+    volumes:
+      - ./ssh_keys:/shared_keys
+
+  target3:
+    build: ./ansible-target
+    container_name: target3
+    environment:
+      - TARGET_NAME=target3
+    volumes:
+      - ./ssh_keys:/shared_keys
+
+  target4:
+    build: ./ansible-target
+    container_name: target4
+    environment:
+      - TARGET_NAME=target4
+    volumes:
+      - ./ssh_keys:/shared_keys
+
+  target5:
+    build: ./ansible-target
+    container_name: target5
+    environment:
+      - TARGET_NAME=target5
+    volumes:
+      - ./ssh_keys:/shared_keys

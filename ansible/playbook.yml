@@ -1,0 +1,39 @@
+- name: Demo playbook for portfolio
+  hosts: target
+  become: true
+
+  tasks:
+    - name: update apt cache
+      apt:
+        update_cache: yes
+      changed_when: false
+
+    - name: ensure nginx is installed
+      apt:
+        name: nginx
+        state: present
+
+    - name: ensure nginx is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: drop a demo index.html
+      copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+            <body>
+              <h1>{{ inventory_hostname }} managed by Ansible</h1>
+              <p>Deployed at: {{ ansible_date_time.iso8601 }}</p>
+            </body>
+          </html>
+
+    - name: show uptime (for demo)
+      command: uptime
+      register: uptime_out
+
+    - name: print uptime
+      debug:
+        var: uptime_out.stdout
