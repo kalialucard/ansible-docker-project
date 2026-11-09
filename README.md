@@ -1,192 +1,79 @@
-# Ansible Docker Lab
+# Ansible Docker Lab 🤖
 
-A small, self-contained lab that demonstrates **Ansible automation** against multiple Docker containers.
-It’s perfect for a portfolio: 1 control node (Ansible) + 5 Ubuntu target nodes, managed over SSH with a shared key.
+> A self-contained Ansible automation lab: one control node driving five Ubuntu Docker targets over SSH, with idempotent playbooks you can run from your laptop.
 
----
+[![Ansible](https://img.shields.io/badge/Ansible-2.x-red?logo=ansible)](https://www.ansible.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## Repo structure
+## What It Does
+
+Spinning up a real Ansible environment usually requires multiple VMs or cloud instances. This lab runs everything in Docker Compose — one control node with Ansible installed and five identical Ubuntu target nodes, all connected over a shared SSH key. It's a portable portfolio demo that runs on any machine with Docker.
+
+## Screenshot
+
+<!-- TODO: add a screenshot of `ansible-playbook` output here -->
+![Ansible run output](docs/screenshot.png)
+
+## Architecture
 
 ```
-ansible-docker-lab/
-├── ansible-control/         # Dockerfile & control setup
-├── ansible-target/          # Dockerfile & target entrypoint
-├── ansible/                 # Ansible project (hosts, playbook, ansible.cfg)
+docker-compose.yml
+├── control   (ansible-control image)  ← runs playbooks
+├── target1   (ansible-target image)   ← Ubuntu 22.04
+├── target2
+├── target3
+├── target4
+└── target5
+```
+
+The control node and all targets share a Docker network. The SSH public key is injected into each target at startup via a shared volume mount.
+
+## Repo Structure
+
+```
+ansible-docker-project/
+├── ansible-control/        # Dockerfile for the Ansible control node
+├── ansible-target/         # Dockerfile + entrypoint for target nodes
+├── ansible/
+│   ├── hosts               # Inventory file
+│   ├── playbook.yml        # Main playbook (nginx, demo file, uptime)
+│   └── ansible.cfg
 ├── docker-compose.yml
-├── ssh_keys/                # host-mounted folder (ADD TO .gitignore)
-└── README.md
+└── ssh_keys/               # Host-mounted SSH keys (gitignored)
 ```
-
----
-
-## Quick summary
-
-* **What it is:** A lab to run Ansible playbooks against multiple Dockerized Ubuntu targets.
-* **What it shows:** SSH key provisioning, inventory-driven automation, idempotent playbooks (nginx install + demo file + uptime).
-* **Why it’s useful:** Portable demo for interviews / GitHub — no cloud infra required.
-
----
 
 ## Prerequisites
 
-* Docker
-* Docker Compose
-* Basic familiarity with shell & Ansible
+- Docker Engine + Docker Compose v2
+- Ports 22 not needed externally — all traffic is internal to the Docker network
 
----
-
-## Quickstart — run the lab
-
-From repo root:
+## Installation & Usage
 
 ```bash
-# create host ssh folder (do not commit private keys)
+git clone https://github.com/kalialucard/ansible-docker-project.git
+cd ansible-docker-project
+
+# Generate an SSH key pair for the lab
 mkdir -p ssh_keys
-chmod 700 ssh_keys
+ssh-keygen -t ed25519 -f ssh_keys/id_ed25519 -N ""
 
-# build and run
-docker compose up --build -d
+# Start all containers
+docker compose up -d
 
-# enter control container
-docker exec -it ansible-control bash
+# Exec into the control node
+docker compose exec control bash
+
+# Inside control node — run the playbook
+ansible-playbook -i /ansible/hosts /ansible/playbook.yml
 ```
 
-**Proof to add:** terminal output of `docker compose up --build -d` and `docker ps`.
+The playbook installs **nginx** on all targets, deploys a demo HTML file, and prints uptime — demonstrating idempotent, inventory-driven automation.
 
-```
-$ docker ps
-CONTAINER ID   IMAGE                            COMMAND                  CREATED         STATUS         PORTS     NAMES
-be41279c349d   ansible-docker-project-ansible   "bash"                   4 minutes ago   Up 4 minutes             ansible-control
-693b7db3c369   ansible-docker-project-target1   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes             target1
-3021b9bdcb7f   ansible-docker-project-target5   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes             target5
-862c0aecfcbd   ansible-docker-project-target2   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes             target2
-bfcb1a9527ab   ansible-docker-project-target3   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes             target3
-03b89ff204ce   ansible-docker-project-target4   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes             target4
-```
+## Contributing
 
----
+PRs welcome. Open an issue first for large changes.
 
-## Basic connectivity tests (paste your outputs here)
+## License
 
-From inside `ansible-control` container:
-
-1. **Ping each target**
-
-```bash
-ping -c 2 target1
-ping -c 2 target2
-# ...
-```
-
-Paste output here. Example:
-
-```
-PING target1 (172.27.0.5) 56(84) bytes of data.
-64 bytes from target1.ansible-docker-project_default (172.27.0.5): icmp_seq=1 ttl=64 time=0.817 ms
-64 bytes from target1.ansible-docker-project_default (172.27.0.5): icmp_seq=2 ttl=64 time=0.133 ms
-```
-
-2. **SSH into a target using the shared key**
-
-```bash
-ssh -i /shared_keys/id_rsa ansible@target1
-```
-
-Paste the SSH login proof (you can redact host keys). Example portion:
-
-```
-The authenticity of host 'target1 (172.27.0.5)' can't be established.
-Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
-Welcome to Ubuntu 22.04.5 LTS ...
-ansible@693b7db3c369:~$ exit
-```
-
-3. **Ansible ping module**
-
-From control container:
-
-```bash
-ansible -i hosts all -m ping
-```
-
-Paste the output. Example:
-
-```
-target5 | SUCCESS => {
-    "changed": false,
-    "ping": "pong"
-}
-target4 | SUCCESS => {
-    "changed": false,
-    "ping": "pong"
-}
-...
-```
-
----
-
-## Run the demo playbook (what to run & proof)
-
-From control container:
-
-```bash
-cd /home/ansible/project
-ansible-playbook -i hosts playbook.yml
-```
-
-**Proof / paste the playbook output.** Example (trimmed):
-
-```
-PLAY [Demo playbook for portfolio] ***************************************************************
-
-TASK [Gathering Facts] *******************************************************************************
-ok: [target4]
-ok: [target1]
-ok: [target3]
-ok: [target5]
-ok: [target2]
-
-TASK [update apt cache] *******************************************************************************
-ok: [target1]
-ok: [target5]
-ok: [target2]
-ok: [target3]
-ok: [target4]
-
-TASK [ensure nginx is installed] **********************************************************************
-changed: [target3]
-changed: [target5]
-changed: [target1]
-changed: [target4]
-changed: [target2]
-
-TASK [ensure nginx is started and enabled] ***********************************************************
-changed: [target2]
-changed: [target4]
-changed: [target3]
-changed: [target5]
-changed: [target1]
-
-TASK [drop a demo index.html] ************************************************************************
-changed: [target3]
-changed: [target2]
-changed: [target5]
-changed: [target1]
-changed: [target4]
-
-TASK [show uptime (for demo)] ************************************************************************
-changed: [target5]
-changed: [target2]
-changed: [target3]
-changed: [target1]
-changed: [target4]
-
-TASK [print uptime] **********************************************************************************
-ok: [target1] => {
-    "uptime_out.stdout": " 09:48:03 up  6:38,  0 users,  load average: 1.25, 0.97, 0.65"
-}
-...
-PLAY RECAP *******************************************************************************************
-target1 : ok=7 changed=4 ...
-...
-```
+[MIT](LICENSE) © kalialucard
